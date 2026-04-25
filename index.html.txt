@@ -817,14 +817,14 @@
       <div class="card advice-block">
         <div class="advice-row"><span class="adv-icon">⛔</span> <div>鈉攝取 &lt;1500mg（≈ 3/4茶匙鹽）<br><span style="font-size:11px;color:var(--text3);">高血壓 + CKD 雙重限制，避免醬油、味噌湯、加工食品</span></div></div>
         <div class="advice-row"><span class="adv-icon">⛔</span> <div>蛋白質每日 ≤ 56g（0.8g/kg × 74kg）<br><span style="font-size:11px;color:var(--text3);">1份蛋白質約：雞胸肉30g、豆腐半塊、蛋1顆</span></div></div>
-        <div class="advice-row"><span class="adv-icon">⛔</span> <div>限制高鉀食物（eGFR &lt;45）<br><span style="font-size:11px;color:var(--text3);">避免：香蕉、番茄、馬鈴薯、菠菜、堅果</span></div></div>
+        <div class="advice-row"><span class="adv-icon">⛔</span> <div>限制高鉀食物（eGFR &lt;45）<br><span style="font-size:11px;color:var(--text3);">少量：香蕉、馬鈴薯、菠菜、堅果</span></div></div>
         <div class="advice-row"><span class="adv-icon">✅</span> <div>用糙米替代白飯（降低 GI 值）<br><span style="font-size:11px;color:var(--text3);">每餐白飯減少 1/3，改以蔬菜或豆腐補足</span></div></div>
         <div class="advice-row" style="margin-bottom:0;"><span class="adv-icon">✅</span> <div>Omega-3 食物降三酸甘油脂<br><span style="font-size:11px;color:var(--text3);">每週 2 次：秋刀魚、鮭魚、鯖魚（清蒸或烤）</span></div></div>
       </div>
 
       <div class="section-label">🏃 運動建議</div>
       <div class="card advice-block">
-        <div class="advice-row"><span class="adv-icon">✅</span> 每日三餐後步行 15–20 分鐘（降餐後血糖最有效）</div>
+        <div class="advice-row"><span class="adv-icon">✅</span> 每日三餐後步行 15–20 分鐘（降餐後血糖最有效）或站立10分鐘</div>
         <div class="advice-row"><span class="adv-icon">✅</span> 每週 3 次有氧運動（快走、游泳）30分鐘</div>
         <div class="advice-row" style="margin-bottom:0;"><span class="adv-icon">⚠️</span> 血壓 &gt;160 時請先休息，勿劇烈運動</div>
       </div>
