@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>慢性病整合健康管理 App</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #E24B4A; --red-bg: #FCEBEB; --red-border: #F7C1C1; --red-text: #A32D2D;
+    --yellow: #BA7517; --yellow-bg: #FAEEDA; --yellow-border: #FAC775; --yellow-text: #854F0B;
+    --green: #3B6D11; --green-bg: #EAF3DE; --green-border: #C0DD97; --green-text: #27500A;
+    --blue: #185FA5; --blue-bg: #E6F1FB; --blue-border: #B5D4F4; --blue-text: #0C447C;
+    --bg: #F4F2EC;
+    --card: #FFFFFF;
+    --text: #2C2C2A;
+    --text2: #5F5E5A;
+    --text3: #888780;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --font: 'Noto Sans TC', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: var(--font); color: var(--text); }
+
+  /* APP SHELL */
+  .app-shell {
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--card);
+    border-bottom: 0.5px solid var(--border);
+    padding: 14px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-title { font-size: 18px; font-weight: 700; color: var(--text); }
+  .topbar-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .topbar-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--blue-bg); border: 1.5px solid var(--blue-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: var(--blue-text);
+  }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 80px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: var(--card);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    z-index: 100;
+    padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 3px; cursor: pointer; padding: 4px 0;
+    color: var(--text3); font-size: 10px; font-weight: 500;
+    border: none; background: transparent; transition: color .2s;
+  }
+  .nav-item .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-item.active { color: var(--blue); }
+  .nav-item.active .nav-icon { transform: scale(1.1); }
+
+  /* CARDS */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-header {
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-header-title { font-size: 15px; font-weight: 700; color: var(--text); }
+
+  /* SUMMARY GRID */
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;
+  }
+  .stat-card {
+    border-radius: var(--radius-sm); padding: 10px 10px 8px;
+    position: relative; overflow: hidden;
+  }
+  .stat-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; font-weight: 500; }
+  .stat-value { font-size: 22px; font-weight: 700; line-height: 1; }
+  .stat-unit { font-size: 10px; margin-top: 2px; opacity: .7; }
+  .stat-badge {
+    position: absolute; top: 6px; right: 6px;
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .s-red { background: var(--red-bg); }
+  .s-red .stat-value { color: var(--red-text); }
+  .s-red .stat-badge { background: var(--red); }
+  .s-yellow { background: var(--yellow-bg); }
+  .s-yellow .stat-value { color: var(--yellow-text); }
+  .s-yellow .stat-badge { background: var(--yellow); }
+  .s-green { background: var(--green-bg); }
+  .s-green .stat-value { color: var(--green-text); }
+  .s-green .stat-badge { background: var(--green); }
+  .s-blue { background: var(--blue-bg); }
+  .s-blue .stat-value { color: var(--blue-text); }
+  .s-blue .stat-badge { background: var(--blue); }
+
+  /* ALERT */
+  .alert {
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 13px;
+    border: 0.5px solid;
+  }
+  .alert-icon { font-size: 16px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+  .alert-title { font-weight: 700; margin-bottom: 2px; font-size: 13px; }
+  .alert-body { font-size: 12px; opacity: .85; line-height: 1.5; }
+  .alert-red { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+  .alert-yellow { background: var(--yellow-bg); color: var(--yellow-text); border-color: var(--yellow-border); }
+  .alert-green { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+  .alert-blue { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue-border); }
+
+  /* PROGRESS */
+  .prog-wrap { background: #E8E6DE; border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 8px; }
+  .prog-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    color: var(--text3); text-transform: uppercase; margin-bottom: 8px; padding: 0 2px;
+  }
+
+  /* ── RECORD SCREEN ── */
+  .rec-tabs { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
+  .rec-tab {
+    flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    background: var(--card); color: var(--text2);
+    border: 0.5px solid var(--border2); transition: all .15s;
+  }
+  .rec-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  .input-section { display: none; }
+  .input-section.active { display: block; }
+
+  .field-group { margin-bottom: 16px; }
+  .field-label {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .field-hint { font-size: 11px; color: var(--text3); font-weight: 400; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .field-row.solo { grid-template-columns: 1fr; }
+  .field-box { position: relative; }
+  .field-input {
+    width: 100%; height: 52px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--card);
+    font-family: var(--mono);
+    font-size: 24px; font-weight: 500;
+    color: var(--text);
+    padding: 0 48px 0 14px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(24,95,165,.12); }
+  .field-unit-tag {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: var(--text3); pointer-events: none; font-weight: 500;
+    background: var(--bg); padding: 2px 6px; border-radius: 4px;
+  }
+  .inline-alert { margin-top: 10px; }
+
+  .save-btn {
+    width: 100%; height: 52px; border-radius: var(--radius);
+    background: var(--blue); color: #fff;
+    font-family: var(--font); font-size: 16px; font-weight: 700;
+    border: none; cursor: pointer; margin-top: 8px;
+    transition: opacity .15s, transform .1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .save-btn:active { opacity: .85; transform: scale(.98); }
+  .save-success {
+    text-align: center; font-size: 13px; color: var(--green-text);
+    background: var(--green-bg); border: 0.5px solid var(--green-border);
+    border-radius: var(--radius-sm); padding: 10px;
+    margin-top: 8px; display: none;
+  }
+
+  /* ── TREND SCREEN ── */
+  .trend-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .trend-tab {
+    flex: 1; padding: 8px 0; border-radius: 20px;
+    font-size: 12px; font-weight: 500; cursor: pointer; text-align: center;
+    background: var(--card); color: var(--text2);
+    border: 0.5px solid var(--border); transition: all .15s;
+  }
+  .trend-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .trend-panel { display: none; }
+  .trend-panel.active { display: block; }
+  .chart-container { width: 100%; overflow-x: auto; }
+  .chart-svg { display: block; }
+  .trend-stats { display: flex; gap: 16px; margin-top: 10px; }
+  .trend-stat { font-size: 12px; color: var(--text2); }
+  .trend-stat strong { color: var(--text); font-weight: 700; }
+
+  /* ── MEDS SCREEN ── */
+  .med-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 0.5px solid var(--border);
+  }
+  .med-item:last-child { border-bottom: none; }
+  .med-pill {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--blue-bg); border: 1px solid var(--blue-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .med-info { flex: 1; min-width: 0; }
+  .med-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .med-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .med-check {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 2px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    font-size: 14px; transition: all .2s;
+    background: transparent;
+  }
+  .med-check.done { background: var(--green); border-color: var(--green); color: #fff; }
+  .med-check.missed { border-color: var(--red); background: var(--red-bg); }
+
+  /* ── ADVICE SCREEN ── */
+  .disease-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .dtag {
+    font-size: 12px; font-weight: 700; padding: 4px 12px;
+    border-radius: 20px; letter-spacing: .02em;
+  }
+  .dtag-red { background: var(--red-bg); color: var(--red-text); border: 0.5px solid var(--red-border); }
+  .dtag-yellow { background: var(--yellow-bg); color: var(--yellow-text); border: 0.5px solid var(--yellow-border); }
+  .dtag-blue { background: var(--blue-bg); color: var(--blue-text); border: 0.5px solid var(--blue-border); }
+  .dtag-green { background: var(--green-bg); color: var(--green-text); border: 0.5px solid var(--green-border); }
+
+  .task-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 0; border-bottom: 0.5px solid var(--border); cursor: pointer;
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-cb {
+    width: 24px; height: 24px; border-radius: 7px;
+    border: 2px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 13px; transition: all .2s;
+  }
+  .task-cb.done { background: var(--green); border-color: var(--green); color: #fff; }
+  .task-text { font-size: 14px; color: var(--text); flex: 1; line-height: 1.4; transition: all .2s; }
+  .task-text.done { color: var(--text3); text-decoration: line-through; }
+  .task-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 12px; flex-shrink: 0;
+  }
+
+  .advice-block { margin-bottom: 6px; }
+  .advice-row {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--card); border-radius: var(--radius-sm);
+    padding: 10px 12px; margin-bottom: 6px;
+    border: 0.5px solid var(--border);
+    font-size: 13px; color: var(--text); line-height: 1.5;
+  }
+  .adv-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+  /* date display */
+  .date-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-bg); color: var(--blue-text);
+    border: 0.5px solid var(--blue-border);
+    border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 500;
+    margin-bottom: 14px;
+  }
+
+  /* risk band */
+  .risk-band {
+    display: flex; border-radius: var(--radius-sm); overflow: hidden;
+    border: 0.5px solid var(--border); margin-bottom: 12px;
+  }
+  .risk-seg { flex: 1; text-align: center; padding: 6px 4px; font-size: 11px; font-weight: 700; }
+  .risk-seg.active-red { background: var(--red); color: #fff; }
+  .risk-seg.active-yellow { background: var(--yellow); color: #fff; }
+  .risk-seg.active-green { background: var(--green); color: #fff; }
+  .risk-seg:not([class*="active"]) { background: var(--card); color: var(--text3); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- TOP BAR -->
+  <div class="topbar" id="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">健康管理</div>
+      <div class="topbar-sub" id="topbar-sub">今日摘要</div>
+    </div>
+    <div class="topbar-avatar">水王</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══ HOME ══ -->
+    <div id="screen-home" class="screen active">
+      <div class="date-chip">📅 2025年4月25日（星期五）</div>
+
+      <div class="risk-band">
+        <div class="risk-seg active-red">🔴 危險×2</div>
+        <div class="risk-seg active-yellow">🟡 注意×2</div>
+        <div class="risk-seg active-green">🟢 正常×2</div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="stat-card s-red">
+          <div class="stat-badge"></div>
+          <div class="stat-label">收縮壓</div>
+          <div class="stat-value">152</div>
+          <div class="stat-unit">mmHg</div>
+        </div>
+        <div class="stat-card s-yellow">
+          <div class="stat-badge"></div>
+          <div class="stat-label">餐後血糖</div>
+          <div class="stat-value">186</div>
+          <div class="stat-unit">mg/dL</div>
+        </div>
+        <div class="stat-card s-green">
+          <div class="stat-badge"></div>
+          <div class="stat-label">eGFR</div>
+          <div class="stat-value">42</div>
+          <div class="stat-unit">mL/min</div>
+        </div>
+        <div class="stat-card s-yellow">
+          <div class="stat-badge"></div>
+          <div class="stat-label">體重</div>
+          <div class="stat-value">74.2</div>
+          <div class="stat-unit">kg</div>
+        </div>
+        <div class="stat-card s-red">
+          <div class="stat-badge"></div>
+          <div class="stat-label">LDL</div>
+          <div class="stat-value">135</div>
+          <div class="stat-unit">mg/dL</div>
+        </div>
+        <div class="stat-card s-green">
+          <div class="stat-badge"></div>
+          <div class="stat-label">舒張壓</div>
+          <div class="stat-value">88</div>
+          <div class="stat-unit">mmHg</div>
+        </div>
+      </div>
+
+      <div class="section-label">今日警示</div>
+      <div class="alert alert-red">
+        <div class="alert-icon">⚠️</div>
+        <div>
+          <div class="alert-title">血壓偏高警示</div>
+          <div class="alert-body">收縮壓 152 mmHg 超過目標值（&lt;140）。請避免高鈉食物，確認今日降壓藥是否已服用。</div>
+        </div>
+      </div>
+      <div class="alert alert-yellow">
+        <div class="alert-icon">▲</div>
+        <div>
+          <div class="alert-title">餐後血糖偏高</div>
+          <div class="alert-body">186 mg/dL 超過建議上限（180）。建議飯後散步 15 分鐘，減少白飯攝取量。</div>
+        </div>
+      </div>
+      <div class="alert alert-yellow">
+        <div class="alert-icon">▲</div>
+        <div>
+          <div class="alert-title">LDL 對 CKD 患者偏高</div>
+          <div class="alert-body">135 mg/dL（建議 &lt;100 mg/dL）。請確認 Rosuvastatin 晚間服藥情況。</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px;">
+        <div class="card-header">
+          <span class="card-header-title">今日任務</span>
+          <span style="font-size:12px;color:var(--text3);" id="home-task-count">2/5 完成</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-fill" id="home-prog" style="width:40%"></div></div>
+        <div style="font-size:12px;color:var(--text2);">點選「建議」分頁查看完整任務清單</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-header-title">腎功能追蹤</span></div>
+        <div class="alert alert-yellow" style="margin-bottom:0;">
+          <div class="alert-icon">📉</div>
+          <div>
+            <div class="alert-title">eGFR 3個月持續下降</div>
+            <div class="alert-body">由 50 → 42 mL/min（CKD G3b 期）。建議 2 週內回診腎臟科評估。</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /home -->
+
+    <!-- ══ RECORD ══ -->
+    <div id="screen-record" class="screen">
+      <div style="font-size:15px;font-weight:700;margin-bottom:14px;">快速輸入健康數據</div>
+
+      <div class="rec-tabs">
+        <div class="rec-tab active" onclick="switchRecTab(this,'bp')">🩺 血壓</div>
+        <div class="rec-tab" onclick="switchRecTab(this,'bs')">🩸 血糖</div>
+        <div class="rec-tab" onclick="switchRecTab(this,'kidney')">🫘 腎功能</div>
+        <div class="rec-tab" onclick="switchRecTab(this,'lipid')">💧 血脂</div>
+        <div class="rec-tab" onclick="switchRecTab(this,'wt')">⚖️ 體重</div>
+      </div>
+
+      <!-- BP -->
+      <div id="inp-bp" class="input-section active">
+        <div class="field-group">
+          <div class="field-label">血壓 <span class="field-hint">目標 &lt;140/90 mmHg</span></div>
+          <div class="field-row">
+            <div class="field-box">
+              <input class="field-input" type="number" id="sys" placeholder="120" inputmode="numeric" oninput="checkBP()">
+              <span class="field-unit-tag">收縮壓</span>
+            </div>
+            <div class="field-box">
+              <input class="field-input" type="number" id="dia" placeholder="80" inputmode="numeric" oninput="checkBP()">
+              <span class="field-unit-tag">舒張壓</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px;">單位：mmHg</div>
+          <div id="bp-hint" class="inline-alert"></div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">量測時間</div>
+          <div class="field-row solo">
+            <div class="field-box">
+              <input class="field-input" type="time" id="bp-time" value="08:00" style="font-size:18px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BS -->
+      <div id="inp-bs" class="input-section">
+        <div class="field-group">
+          <div class="field-label">血糖 <span class="field-hint">空腹&lt;130 / 餐後&lt;180</span></div>
+          <div class="field-row">
+            <div class="field-box">
+              <input class="field-input" type="number" id="fg" placeholder="95" inputmode="numeric">
+              <span class="field-unit-tag">空腹</span>
+            </div>
+            <div class="field-box">
+              <input class="field-input" type="number" id="pp" placeholder="140" inputmode="numeric" oninput="checkBG()">
+              <span class="field-unit-tag">餐後2h</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px;">單位：mg/dL</div>
+          <div id="bg-hint" class="inline-alert"></div>
+        </div>
+      </div>
+
+      <!-- KIDNEY -->
+      <div id="inp-kidney" class="input-section">
+        <div class="field-group">
+          <div class="field-label">腎功能指標</div>
+          <div class="field-row">
+            <div class="field-box">
+              <input class="field-input" type="number" id="egfr" placeholder="42" inputmode="numeric" oninput="checkKidney()">
+              <span class="field-unit-tag">eGFR</span>
+            </div>
+            <div class="field-box">
+              <input class="field-input" type="number" id="creat" placeholder="1.8" step="0.1" inputmode="decimal">
+              <span class="field-unit-tag">肌酸酐</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px;">eGFR: mL/min/1.73m² ／ 肌酸酐: mg/dL</div>
+          <div id="kidney-hint" class="inline-alert"></div>
+        </div>
+      </div>
+
+      <!-- LIPID -->
+      <div id="inp-lipid" class="input-section">
+        <div class="field-group">
+          <div class="field-label">血脂 <span class="field-hint">LDL目標&lt;100（CKD）</span></div>
+          <div class="field-row">
+            <div class="field-box">
+              <input class="field-input" type="number" id="ldl" placeholder="135" inputmode="numeric">
+              <span class="field-unit-tag">LDL</span>
+            </div>
+            <div class="field-box">
+              <input class="field-input" type="number" id="hdl" placeholder="45" inputmode="numeric">
+              <span class="field-unit-tag">HDL</span>
+            </div>
+          </div>
+          <div class="field-row" style="margin-top:8px;">
+            <div class="field-box">
+              <input class="field-input" type="number" id="tg" placeholder="180" inputmode="numeric">
+              <span class="field-unit-tag">三酸甘油脂</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px;">單位：mg/dL</div>
+        </div>
+      </div>
+
+      <!-- WEIGHT -->
+      <div id="inp-wt" class="input-section">
+        <div class="field-group">
+          <div class="field-label">體重 <span class="field-hint">建議晨起空腹量測</span></div>
+          <div class="field-row solo">
+            <div class="field-box">
+              <input class="field-input" type="number" id="wt" placeholder="74.2" step="0.1" inputmode="decimal" style="font-size:28px;">
+              <span class="field-unit-tag">kg</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="save-btn" onclick="saveRecord()">
+        <span>確認儲存</span>
+      </button>
+      <div class="save-success" id="save-success">✅ 數據已儲存，風險分析已更新</div>
+    </div><!-- /record -->
+
+    <!-- ══ TREND ══ -->
+    <div id="screen-trend" class="screen">
+      <div style="font-size:15px;font-weight:700;margin-bottom:14px;">健康數據趨勢</div>
+      <div class="trend-tabs">
+        <div class="trend-tab active" onclick="switchTrend(this,'t-bp')">血壓</div>
+        <div class="trend-tab" onclick="switchTrend(this,'t-bg')">血糖</div>
+        <div class="trend-tab" onclick="switchTrend(this,'t-egfr')">eGFR</div>
+        <div class="trend-tab" onclick="switchTrend(this,'t-wt')">體重</div>
+      </div>
+
+      <!-- BP trend -->
+      <div id="t-bp" class="trend-panel active">
+        <div class="card">
+          <div class="card-header">血壓趨勢（近7日）</div>
+          <div class="chart-container">
+            <svg class="chart-svg" viewBox="0 0 380 130" width="100%">
+              <defs>
+                <linearGradient id="sys-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#E24B4A" stop-opacity=".15"/>
+                  <stop offset="100%" stop-color="#E24B4A" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- grid lines -->
+              <line x1="30" y1="100" x2="370" y2="100" stroke="#E8E6DE" stroke-width="1"/>
+              <line x1="30" y1="75" x2="370" y2="75" stroke="#E8E6DE" stroke-width="0.5"/>
+              <line x1="30" y1="50" x2="370" y2="50" stroke="#E8E6DE" stroke-width="0.5"/>
+              <line x1="30" y1="25" x2="370" y2="25" stroke="#E8E6DE" stroke-width="0.5"/>
+              <!-- 140 ref line -->
+              <line x1="30" y1="40" x2="370" y2="40" stroke="#E24B4A" stroke-width="0.8" stroke-dasharray="5 4"/>
+              <text x="26" y="43" font-family="'DM Mono'" font-size="8" fill="#E24B4A" text-anchor="end">140</text>
+              <!-- sys area fill -->
+              <polygon fill="url(#sys-grad)" points="55,28 105,32 155,22 205,36 255,30 305,40 355,28 355,100 55,100"/>
+              <!-- sys line: 158,154,162,148,152,144,152 -->
+              <polyline fill="none" stroke="#E24B4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                points="55,28 105,32 155,22 205,36 255,30 305,40 355,28"/>
+              <!-- dia line: 92,88,96,84,88,82,88 -->
+              <polyline fill="none" stroke="#185FA5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                points="55,70 105,74 155,66 205,78 255,74 305,80 355,74"/>
+              <!-- dots sys -->
+              <circle cx="55" cy="28" r="3" fill="#E24B4A"/>
+              <circle cx="105" cy="32" r="3" fill="#E24B4A"/>
+              <circle cx="155" cy="22" r="3.5" fill="#E24B4A" stroke="white" stroke-width="1.5"/>
+              <circle cx="205" cy="36" r="3" fill="#E24B4A"/>
+              <circle cx="255" cy="30" r="3" fill="#E24B4A"/>
+              <circle cx="305" cy="40" r="3" fill="#E24B4A"/>
+              <circle cx="355" cy="28" r="4" fill="#E24B4A" stroke="white" stroke-width="2"/>
+              <!-- x labels -->
+              <text x="55" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">4/19</text>
+              <text x="105" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">20</text>
+              <text x="155" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">21</text>
+              <text x="205" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">22</text>
+              <text x="255" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">23</text>
+              <text x="305" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">24</text>
+              <text x="355" y="114" font-family="'DM Mono'" font-size="8" fill="#2C2C2A" text-anchor="middle" font-weight="700">今日</text>
+              <!-- legend -->
+              <line x1="55" y1="126" x2="68" y2="126" stroke="#E24B4A" stroke-width="2"/>
+              <text x="71" y="129" font-size="8" fill="#888780">收縮壓</text>
+              <line x1="112" y1="126" x2="125" y2="126" stroke="#185FA5" stroke-width="1.5"/>
+              <text x="128" y="129" font-size="8" fill="#888780">舒張壓</text>
+            </svg>
+          </div>
+          <div class="trend-stats">
+            <div class="trend-stat">週平均 <strong style="color:var(--red-text);">152/87</strong> mmHg</div>
+            <div class="trend-stat">趨勢 <strong>輕微改善 ↓</strong></div>
+          </div>
+        </div>
+        <div class="alert alert-red">
+          <div class="alert-icon">!</div>
+          <div><div class="alert-title">7天中6天血壓超標</div><div class="alert-body">建議回診討論是否需要調整降壓藥物劑量。每日早晨量測並記錄。</div></div>
+        </div>
+      </div>
+
+      <!-- BG trend -->
+      <div id="t-bg" class="trend-panel">
+        <div class="card">
+          <div class="card-header">餐後血糖趨勢（近7日）</div>
+          <div class="chart-container">
+            <svg class="chart-svg" viewBox="0 0 380 130" width="100%">
+              <line x1="30" y1="100" x2="370" y2="100" stroke="#E8E6DE" stroke-width="1"/>
+              <line x1="30" y1="50" x2="370" y2="50" stroke="#E8E6DE" stroke-width="0.5"/>
+              <!-- 180 ref -->
+              <line x1="30" y1="45" x2="370" y2="45" stroke="#BA7517" stroke-width="0.8" stroke-dasharray="5 4"/>
+              <text x="26" y="48" font-family="'DM Mono'" font-size="8" fill="#BA7517" text-anchor="end">180</text>
+              <polyline fill="none" stroke="#BA7517" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                points="55,55 105,48 155,60 205,42 255,48 305,36 355,30"/>
+              <circle cx="55" cy="55" r="3" fill="#BA7517"/>
+              <circle cx="105" cy="48" r="3" fill="#BA7517"/>
+              <circle cx="155" cy="60" r="3" fill="#BA7517"/>
+              <circle cx="205" cy="42" r="3.5" fill="#E24B4A" stroke="white" stroke-width="1.5"/>
+              <circle cx="255" cy="48" r="3" fill="#BA7517"/>
+              <circle cx="305" cy="36" r="3.5" fill="#E24B4A" stroke="white" stroke-width="1.5"/>
+              <circle cx="355" cy="30" r="4" fill="#E24B4A" stroke="white" stroke-width="2"/>
+              <text x="55" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">4/19</text>
+              <text x="355" y="114" font-family="'DM Mono'" font-size="8" fill="#2C2C2A" text-anchor="middle" font-weight="700">今日</text>
+            </svg>
+          </div>
+          <div class="trend-stats">
+            <div class="trend-stat">週平均 <strong style="color:var(--yellow-text);">179 mg/dL</strong></div>
+            <div class="trend-stat">趨勢 <strong style="color:var(--red-text);">上升 ↑</strong></div>
+          </div>
+        </div>
+        <div class="alert alert-yellow">
+          <div class="alert-icon">▲</div>
+          <div><div class="alert-title">餐後血糖本週呈上升趨勢</div><div class="alert-body">建議每餐後步行 15 分鐘，並減少精緻澱粉（白米飯改為糙米）。</div></div>
+        </div>
+      </div>
+
+      <!-- eGFR trend -->
+      <div id="t-egfr" class="trend-panel">
+        <div class="card">
+          <div class="card-header">eGFR 趨勢（近3個月）</div>
+          <div class="chart-container">
+            <svg class="chart-svg" viewBox="0 0 380 130" width="100%">
+              <line x1="30" y1="100" x2="370" y2="100" stroke="#E8E6DE" stroke-width="1"/>
+              <line x1="30" y1="65" x2="370" y2="65" stroke="#E8E6DE" stroke-width="0.5"/>
+              <!-- eGFR 30 critical line -->
+              <line x1="30" y1="85" x2="370" y2="85" stroke="#E24B4A" stroke-width="0.8" stroke-dasharray="5 4"/>
+              <text x="26" y="88" font-family="'DM Mono'" font-size="8" fill="#E24B4A" text-anchor="end">30</text>
+              <!-- eGFR declining: 50→42 -->
+              <polyline fill="none" stroke="#3B6D11" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                points="55,32 105,36 155,40 205,44 255,46 305,48 355,52"/>
+              <circle cx="55" cy="32" r="3" fill="#3B6D11"/>
+              <circle cx="355" cy="52" r="4" fill="#BA7517" stroke="white" stroke-width="2"/>
+              <!-- zone label -->
+              <text x="360" y="52" font-family="'DM Mono'" font-size="8" fill="#BA7517" text-anchor="start"> 42</text>
+              <text x="55" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">1月</text>
+              <text x="155" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">2月</text>
+              <text x="255" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">3月</text>
+              <text x="355" y="114" font-family="'DM Mono'" font-size="8" fill="#2C2C2A" text-anchor="middle" font-weight="700">4月</text>
+            </svg>
+          </div>
+          <div class="trend-stats">
+            <div class="trend-stat">3個月下降 <strong style="color:var(--yellow-text);">8 mL/min</strong></div>
+            <div class="trend-stat">目前分期 <strong style="color:var(--yellow-text);">CKD G3b</strong></div>
+          </div>
+        </div>
+        <div class="alert alert-yellow">
+          <div class="alert-icon">⚕️</div>
+          <div><div class="alert-title">eGFR 持續下降，建議就醫</div><div class="alert-body">若持續下降速度，預計12個月後可能進入 G4 期。請在 2 週內回診腎臟科，控制蛋白質攝取 ≤0.8g/kg/日。</div></div>
+        </div>
+      </div>
+
+      <!-- WT trend -->
+      <div id="t-wt" class="trend-panel">
+        <div class="card">
+          <div class="card-header">體重趨勢（近7日）</div>
+          <div class="chart-container">
+            <svg class="chart-svg" viewBox="0 0 380 130" width="100%">
+              <line x1="30" y1="100" x2="370" y2="100" stroke="#E8E6DE" stroke-width="1"/>
+              <polyline fill="none" stroke="#185FA5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                points="55,50 105,48 155,52 205,50 255,46 305,48 355,44"/>
+              <circle cx="355" cy="44" r="4" fill="#185FA5" stroke="white" stroke-width="2"/>
+              <text x="55" y="114" font-family="'DM Mono'" font-size="8" fill="#888780" text-anchor="middle">4/19</text>
+              <text x="355" y="114" font-family="'DM Mono'" font-size="8" fill="#2C2C2A" text-anchor="middle" font-weight="700">今日</text>
+            </svg>
+          </div>
+          <div class="trend-stats">
+            <div class="trend-stat">本週平均 <strong>74.3 kg</strong></div>
+            <div class="trend-stat">趨勢 <strong style="color:var(--green-text);">微降 ↓0.3kg</strong></div>
+          </div>
+        </div>
+        <div class="alert alert-green">
+          <div class="alert-icon">✅</div>
+          <div><div class="alert-title">體重控制良好</div><div class="alert-body">本週體重穩定，繼續維持飲食控制與規律運動。</div></div>
+        </div>
+      </div>
+    </div><!-- /trend -->
+
+    <!-- ══ MEDS ══ -->
+    <div id="screen-meds" class="screen">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">今日用藥管理</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">已服用 1 / 4 種 · 4月25日</div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-header-title">🌅 早上 08:00</span></div>
+        <div class="med-item">
+          <div class="med-pill">💊</div>
+          <div class="med-info">
+            <div class="med-name">氨氯地平 Amlodipine</div>
+            <div class="med-meta">5 mg · 每日一次 · 鈣離子阻斷劑（降血壓）</div>
+          </div>
+          <div class="med-check done" id="m1" onclick="toggleMed('m1')">✓</div>
+        </div>
+        <div class="med-item">
+          <div class="med-pill">💊</div>
+          <div class="med-info">
+            <div class="med-name">Metformin 二甲雙胍</div>
+            <div class="med-meta">500 mg · 早晚餐後 · 降血糖</div>
+          </div>
+          <div class="med-check" id="m2" onclick="toggleMed('m2')"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-header-title">🌙 晚上 20:00</span></div>
+        <div class="med-item">
+          <div class="med-pill">💊</div>
+          <div class="med-info">
+            <div class="med-name">Metformin 二甲雙胍</div>
+            <div class="med-meta">500 mg · 早晚餐後 · 降血糖</div>
+          </div>
+          <div class="med-check" id="m3" onclick="toggleMed('m3')"></div>
+        </div>
+        <div class="med-item">
+          <div class="med-pill">💊</div>
+          <div class="med-info">
+            <div class="med-name">Rosuvastatin 10mg</div>
+            <div class="med-meta">10 mg · 睡前 · 斯達汀類降血脂</div>
+          </div>
+          <div class="med-check" id="m4" onclick="toggleMed('m4')"></div>
+        </div>
+      </div>
+
+      <div class="alert alert-yellow">
+        <div class="alert-icon">⏰</div>
+        <div><div class="alert-title">漏服提醒</div><div class="alert-body">早上 Metformin 尚未標記服用。如已服用請點擊右側按鈕確認打勾。</div></div>
+      </div>
+
+      <div class="card" style="margin-top:4px;">
+        <div class="card-header"><span class="card-header-title">⚠️ 用藥注意事項</span></div>
+        <div class="advice-row" style="margin-bottom:6px;"><span class="adv-icon">🚫</span> 避免同時服用 NSAIDs（如布洛芬），會加重腎損傷</div>
+        <div class="advice-row"><span class="adv-icon">✅</span> Metformin 需於餐中或餐後服用，減少腸胃不適</div>
+      </div>
+    </div><!-- /meds -->
+
+    <!-- ══ ADVICE ══ -->
+    <div id="screen-advice" class="screen">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;">今日任務 &amp; 個人化建議</div>
+
+      <div class="disease-tags">
+        <span class="dtag dtag-red">高血壓</span>
+        <span class="dtag dtag-yellow">第二型糖尿病</span>
+        <span class="dtag dtag-blue">CKD G3b</span>
+        <span class="dtag dtag-yellow">高血脂</span>
+      </div>
+
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-header">
+          <span class="card-header-title">今日任務清單</span>
+          <span style="font-size:12px;color:var(--text3);" id="task-count-lbl">2/5 完成</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-fill" id="task-prog" style="width:40%"></div></div>
+        <div id="task-list">
+          <div class="task-item" onclick="toggleTask(this)">
+            <div class="task-cb done">✓</div>
+            <div class="task-text done">晨起量血壓並記錄</div>
+            <span class="task-badge dtag-red" style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red-border);">血壓</span>
+          </div>
+          <div class="task-item" onclick="toggleTask(this)">
+            <div class="task-cb done">✓</div>
+            <div class="task-text done">早餐後服 Metformin</div>
+            <span class="task-badge dtag-blue" style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--blue-bg);color:var(--blue-text);border:0.5px solid var(--blue-border);">用藥</span>
+          </div>
+          <div class="task-item" onclick="toggleTask(this)">
+            <div class="task-cb"></div>
+            <div class="task-text">飯後步行 15 分鐘</div>
+            <span style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--green-bg);color:var(--green-text);border:0.5px solid var(--green-border);">運動</span>
+          </div>
+          <div class="task-item" onclick="toggleTask(this)">
+            <div class="task-cb"></div>
+            <div class="task-text">今日飲水 1500ml（勿超量）</div>
+            <span style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--blue-bg);color:var(--blue-text);border:0.5px solid var(--blue-border);">腎病</span>
+          </div>
+          <div class="task-item" onclick="toggleTask(this)">
+            <div class="task-cb"></div>
+            <div class="task-text">餐後記錄血糖數值</div>
+            <span style="font-size:10px;padding:3px 8px;border-radius:12px;background:var(--yellow-bg);color:var(--yellow-text);border:0.5px solid var(--yellow-border);">血糖</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">🥗 今日飲食建議</div>
+      <div class="card advice-block">
+        <div class="advice-row"><span class="adv-icon">⛔</span> <div>鈉攝取 &lt;1500mg（≈ 3/4茶匙鹽）<br><span style="font-size:11px;color:var(--text3);">高血壓 + CKD 雙重限制，避免醬油、味噌湯、加工食品</span></div></div>
+        <div class="advice-row"><span class="adv-icon">⛔</span> <div>蛋白質每日 ≤ 56g（0.8g/kg × 74kg）<br><span style="font-size:11px;color:var(--text3);">1份蛋白質約：雞胸肉30g、豆腐半塊、蛋1顆</span></div></div>
+        <div class="advice-row"><span class="adv-icon">⛔</span> <div>限制高鉀食物（eGFR &lt;45）<br><span style="font-size:11px;color:var(--text3);">避免：香蕉、番茄、馬鈴薯、菠菜、堅果</span></div></div>
+        <div class="advice-row"><span class="adv-icon">✅</span> <div>用糙米替代白飯（降低 GI 值）<br><span style="font-size:11px;color:var(--text3);">每餐白飯減少 1/3，改以蔬菜或豆腐補足</span></div></div>
+        <div class="advice-row" style="margin-bottom:0;"><span class="adv-icon">✅</span> <div>Omega-3 食物降三酸甘油脂<br><span style="font-size:11px;color:var(--text3);">每週 2 次：秋刀魚、鮭魚、鯖魚（清蒸或烤）</span></div></div>
+      </div>
+
+      <div class="section-label">🏃 運動建議</div>
+      <div class="card advice-block">
+        <div class="advice-row"><span class="adv-icon">✅</span> 每日三餐後步行 15–20 分鐘（降餐後血糖最有效）</div>
+        <div class="advice-row"><span class="adv-icon">✅</span> 每週 3 次有氧運動（快走、游泳）30分鐘</div>
+        <div class="advice-row" style="margin-bottom:0;"><span class="adv-icon">⚠️</span> 血壓 &gt;160 時請先休息，勿劇烈運動</div>
+      </div>
+
+      <div class="section-label">💧 飲水管理（CKD 專屬）</div>
+      <div class="card advice-block">
+        <div class="advice-row"><span class="adv-icon">📊</span> 建議每日飲水：1500–1800 mL</div>
+        <div class="advice-row" style="margin-bottom:0;"><span class="adv-icon">⚠️</span> 若有水腫或尿量減少，請依醫囑調整，勿自行補水</div>
+      </div>
+    </div><!-- /advice -->
+
+  </div><!-- /content -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="showScreen('home', this, '健康管理', '今日摘要')">
+      <span class="nav-icon">🏠</span>首頁
+    </button>
+    <button class="nav-item" onclick="showScreen('record', this, '快速輸入', '健康數據記錄')">
+      <span class="nav-icon">✏️</span>紀錄
+    </button>
+    <button class="nav-item" onclick="showScreen('trend', this, '數據趨勢', '近期健康變化')">
+      <span class="nav-icon">📈</span>趨勢
+    </button>
+    <button class="nav-item" onclick="showScreen('meds', this, '用藥管理', '今日服藥確認')">
+      <span class="nav-icon">💊</span>用藥
+    </button>
+    <button class="nav-item" onclick="showScreen('advice', this, '健康建議', '個人化任務與守則')">
+      <span class="nav-icon">📋</span>建議
+    </button>
+  </nav>
+</div>
+
+<script>
+// ── Navigation
+function showScreen(id, btn, title, sub) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('topbar-title').textContent = title;
+  document.getElementById('topbar-sub').textContent = sub;
+}
+
+// ── Record tabs
+function switchRecTab(el, id) {
+  document.querySelectorAll('.rec-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.input-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('inp-' + id).classList.add('active');
+}
+
+// ── Trend tabs
+function switchTrend(el, id) {
+  document.querySelectorAll('.trend-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.trend-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Rule Engine (client-side demo)
+function makeAlert(level, title, body) {
+  return `<div class="alert alert-${level}"><div class="alert-icon">${level==='red'?'⚠️':level==='yellow'?'▲':'✅'}</div><div><div class="alert-title">${title}</div><div class="alert-body">${body}</div></div></div>`;
+}
+function checkBP() {
+  var sys = parseInt(document.getElementById('sys').value) || 0;
+  var dia = parseInt(document.getElementById('dia').value) || 0;
+  var h = document.getElementById('bp-hint');
+  if (!sys && !dia) { h.innerHTML = ''; return; }
+  if (sys >= 180 || dia >= 120)
+    h.innerHTML = makeAlert('red','高血壓危象風險','收縮壓 ≥180 或舒張壓 ≥120，請立即休息並聯繫醫師或撥打 119。');
+  else if (sys >= 140 || dia >= 90)
+    h.innerHTML = makeAlert('yellow','血壓偏高','超過目標值 140/90 mmHg。確認今日降壓藥是否已服用，避免高鈉飲食。');
+  else
+    h.innerHTML = makeAlert('green','血壓良好','數值在目標範圍（&lt;140/90）內，繼續維持。');
+}
+function checkBG() {
+  var pp = parseInt(document.getElementById('pp').value) || 0;
+  var h = document.getElementById('bg-hint');
+  if (!pp) { h.innerHTML = ''; return; }
+  if (pp > 200) h.innerHTML = makeAlert('red','高血糖警告','餐後血糖 >200，建議今日減少精緻澱粉，並聯繫醫師。');
+  else if (pp > 180) h.innerHTML = makeAlert('yellow','餐後血糖偏高','建議飯後散步 15 分鐘，明天早餐以糙米替代白飯，減少 1/3 份量。');
+  else h.innerHTML = makeAlert('green','餐後血糖良好','數值在目標範圍 (&lt;180) 內，繼續維持飲食控制。');
+}
+function checkKidney() {
+  var egfr = parseInt(document.getElementById('egfr').value) || 0;
+  var h = document.getElementById('kidney-hint');
+  if (!egfr) { h.innerHTML = ''; return; }
+  if (egfr < 15) h.innerHTML = makeAlert('red','CKD G5 — 腎衰竭，請立即就醫','eGFR &lt;15，需緊急評估腎臟替代療法（透析/移植）。');
+  else if (egfr < 30) h.innerHTML = makeAlert('red','CKD G4 — 請儘速回診','eGFR &lt;30，建議立即回診腎臟科，嚴格限蛋白質 0.6g/kg/日。');
+  else if (egfr < 45) h.innerHTML = makeAlert('yellow','CKD G3b — 需密切追蹤','蛋白質限制 0.6–0.8g/kg/日，避免 NSAIDs，每3個月回診一次。');
+  else if (egfr < 60) h.innerHTML = makeAlert('yellow','CKD G3a','腎功能中度下降，嚴格控制血壓與血糖，每6個月追蹤。');
+  else h.innerHTML = makeAlert('green','腎功能尚可','繼續維持現有治療方針，每年定期追蹤。');
+}
+
+// ── Save
+function saveRecord() {
+  var btn = document.querySelector('.save-btn');
+  var msg = document.getElementById('save-success');
+  btn.querySelector('span').textContent = '儲存中...';
+  btn.disabled = true;
+  setTimeout(function() {
+    btn.querySelector('span').textContent = '確認儲存';
+    btn.disabled = false;
+    msg.style.display = 'block';
+    setTimeout(function() { msg.style.display = 'none'; }, 3000);
+  }, 700);
+}
+
+// ── Meds
+function toggleMed(id) {
+  var el = document.getElementById(id);
+  el.classList.toggle('done');
+  el.textContent = el.classList.contains('done') ? '✓' : '';
+}
+
+// ── Tasks
+var taskDone = 2, taskTotal = 5;
+function toggleTask(item) {
+  var cb = item.querySelector('.task-cb');
+  var txt = item.querySelector('.task-text');
+  var wasDone = cb.classList.contains('done');
+  cb.classList.toggle('done');
+  txt.classList.toggle('done');
+  cb.textContent = cb.classList.contains('done') ? '✓' : '';
+  taskDone += wasDone ? -1 : 1;
+  var pct = Math.round(taskDone / taskTotal * 100);
+  document.getElementById('task-prog').style.width = pct + '%';
+  document.getElementById('task-count-lbl').textContent = taskDone + '/' + taskTotal + ' 完成';
+  document.getElementById('home-prog').style.width = pct + '%';
+  document.getElementById('home-task-count').textContent = taskDone + '/' + taskTotal + ' 完成';
+}
+</script>
+</body>
+</html>
